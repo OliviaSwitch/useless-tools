@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI 模型获取器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 明亮模式下的颜色 */
+            --background-color: #f7f2fa;
+            --surface-color: #fffbff;
+            --on-surface-color: #1c1b1f;
+            --on-surface-variant-color: #1d192b;
+            --primary-color: #6750a4;
+            --on-primary-color: #ffffff;
+            --secondary-color: #625b71;
+            --on-secondary-color: #ffffff;
+            --tertiary-color: #7d5260;
+            --on-tertiary-color: #ffffff;
+            --outline-color: #79747e;
+            --outline-variant-color: #e6e0e9;
+            --surface-variant-color: #f7f2fa;
+            --primary-container-color: #e8def8;
+            --error-color: #b3261e;
+            --error-container-color: #f9dedc;
+        }
+
+        [data-theme="dark"] {
+            /* 暗黑模式下的颜色 */
+            --background-color: #1c1b1f;
+            --surface-color: #2b2930;
+            --on-surface-color: #e6e1e5;
+            --on-surface-variant-color: #cac4d0;
+            --primary-color: #d0bcff;
+            --on-primary-color: #381e72;
+            --secondary-color: #ccc2dc;
+            --on-secondary-color: #332d41;
+            --tertiary-color: #efb8c8;
+            --on-tertiary-color: #492532;
+            --outline-color: #948f99;
+            --outline-variant-color: #49454f;
+            --surface-variant-color: #49454f;
+            --primary-container-color: #4f378b;
+            --error-color: #f2b8b5;
+            --error-container-color: #8c1d18;
+        }
+        
+        body {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--on-surface-color);
+            background-color: var(--background-color);
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        h1 {
+            color: var(--on-surface-variant-color);
+            text-align: center;
+            margin-bottom: 32px;
+            font-weight: 500; /* Medium weight for headings */
+        }
+        
+        .container {
+            background-color: var(--surface-color);
+            border-radius: 16px; /* MD3 Large corner radius */
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); /* MD3 Elevation 1 */
+            transition: background-color 0.3s;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500; /* Medium weight for labels */
+            color: var(--on-surface-variant-color);
+            font-size: 0.875rem; /* 14px */
+        }
+        
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--outline-color);
+            border-radius: 4px; /* MD3 Small corner */
+            font-size: 1rem;
+            background-color: var(--surface-color);
+            color: var(--on-surface-color);
+            box-sizing: border-box;
+            transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+        }
+        
+        input[type="text"]:focus, input[type="password"]:focus, .filter-input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(103, 80, 164, 0.2); /* Focus indicator */
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: var(--on-primary-color);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 100px; /* MD3 Full corner for buttons */
+            cursor: pointer;
+            font-size: 0.875rem; /* 14px */
+            font-weight: 500;
+            letter-spacing: 0.1px;
+            display: block;
+            margin: 20px auto;
+            min-width: 150px;
+            text-transform: uppercase;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        button:hover {
+            background-color: var(--primary-color);
+            filter: brightness(1.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+        }
+        
+        .result {
+            margin-top: 24px;
+            background-color: var(--surface-color);
+            border-radius: 12px; /* MD3 Medium corner */
+            padding: 20px;
+            border: 1px solid var(--outline-variant-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        
+        .model-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--outline-variant-color);
+            transition: background-color 0.15s;
+        }
+        
+        .model-item:hover {
+            background-color: var(--surface-variant-color);
+        }
+        
+        .model-item:last-child {
+            border-bottom: none;
+        }
+        
+        .error {
+            color: var(--error-color);
+            font-weight: 500;
+            background-color: var(--error-container-color);
+            padding: 12px;
+            border-radius: 4px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: var(--on-surface-variant-color);
+            margin: 24px 0;
+            font-size: 1rem;
+        }
+        
+        .model-names {
+            margin-top: 16px;
+            padding: 12px;
+            background-color: var(--surface-variant-color);
+            border: 1px solid var(--outline-variant-color);
+            border-radius: 4px;
+            word-wrap: break-word;
+            width: 100%;
+            min-height: 80px;
+            resize: vertical;
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            box-sizing: border-box;
+            color: var(--on-surface-color);
+            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+        }
+        
+        .copy-button {
+            background-color: var(--secondary-color);
+            color: var(--on-secondary-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 100px; /* MD3 Full corner for buttons */
+            cursor: pointer;
+            font-size: 0.75rem; /* 12px */
+            margin-top: 8px;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+            text-transform: uppercase;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .copy-button:hover {
+            background-color: var(--secondary-color);
+            filter: brightness(1.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+        }
+        
+        /* 过滤功能的样式 */
+        .filter-container {
+            margin-top: 24px;
+            background-color: var(--surface-variant-color);
+            border-radius: 12px; /* MD3 Medium corner */
+            padding: 20px;
+            border: 1px solid var(--outline-variant-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        
+        .filter-container h3 {
+            color: var(--on-surface-variant-color);
+            font-weight: 500;
+            margin-top: 0;
+            margin-bottom: 16px;
+            font-size: 1.125rem; /* 18px */
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        
+        .filter-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--outline-color);
+            border-radius: 4px; /* MD3 Small corner */
+            font-size: 0.875rem;
+            background-color: var(--surface-color);
+            color: var(--on-surface-color);
+            transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+        }
+        
+        .filter-button {
+            background-color: var(--primary-color);
+            color: var(--on-primary-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 100px; /* MD3 Full corner for buttons */
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+            margin: 0;
+            min-width: auto;
+            text-transform: uppercase;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        
+        #resetFilter {
+            background-color: var(--tertiary-color);
+            color: var(--on-tertiary-color);
+        }
+        
+        #resetFilter:hover {
+            background-color: var(--tertiary-color);
+            filter: brightness(1.1);
+        }
+        
+        .filter-mode {
+            margin-bottom: 16px;
+        }
+        
+        .filter-mode label {
+            margin-right: 20px;
+            font-weight: normal;
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.875rem;
+            color: var(--on-surface-variant-color);
+        }
+        
+        .filter-mode input[type="radio"] {
+            margin-right: 8px;
+            accent-color: var(--primary-color);
+        }
+        
+        .filter-help {
+            font-size: 0.75rem; /* 12px */
+            color: var(--on-surface-variant-color);
+            margin-top: 12px;
+            background-color: var(--primary-container-color);
+            padding: 12px;
+            border-radius: 8px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .filter-help p {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        
+        .filter-help ul {
+            padding-left: 20px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+        }
+        
+        .filter-help li {
+            margin-bottom: 4px;
+        }
+        
+        .hidden-model {
+            display: none;
+        }
+        
+        #modelNamesContainer h3 {
+            color: var(--on-surface-variant-color);
+            font-weight: 500;
+            margin-bottom: 12px;
+            font-size: 1.125rem; /* 18px */
+        }
+        
+        #result > h3 {
+            color: var(--on-surface-variant-color);
+            font-weight: 500;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            border-top: 1px solid var(--outline-variant-color);
+            padding-top: 20px;
+            font-size: 1.125rem; /* 18px */
+        }
+        
+        /* 主题切换器样式 */
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 24px;
+            padding: 12px 16px;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            border: 1px solid var(--outline-variant-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .theme-switcher:hover {
+            box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+        }
+        
+        .theme-switcher label {
+            margin: 0;
+            margin-right: 12px;
+            display: inline-block;
+            color: var(--on-surface-variant-color);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .theme-switcher select {
+            padding: 8px 32px 8px 16px;
+            border-radius: 100px;
+            border: 1px solid var(--outline-color);
+            background-color: var(--surface-color);
+            color: var(--on-surface-color);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236750a4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        [data-theme="dark"] .theme-switcher select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d0bcff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        }
+        
+        .theme-switcher select:hover {
+            border-color: var(--primary-color);
+            background-color: var(--surface-variant-color);
+        }
+        
+        .theme-switcher select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb, 103, 80, 164), 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- 添加主题切换器 -->
+    <div class="theme-switcher">
+        <label for="theme-select">主题模式：</label>
+        <select id="theme-select">
+            <option value="system">跟随系统</option>
+            <option value="light">明亮模式</option>
+            <option value="dark">暗黑模式</option>
+        </select>
+    </div>
+    
+    <h1>OpenAI 模型获取器</h1>
+    
+    <div class="container">
+        <div class="form-group">
+            <label for="apiUrl">API 基础 URL（https://api.openai.com/v1）</label>
+            <input type="text" id="apiUrl" placeholder="例如: https://api.openai.com/v1 或自定义 API 地址" value="https://api.openai.com/v1">
+        </div>
+        
+        <div class="form-group">
+            <label for="apiKey">API 密钥</label>
+            <input type="password" id="apiKey" placeholder="输入您的 API 密钥">
+        </div>
+        
+        <button id="fetchModels">获取模型列表</button>
+        
+        <div id="loadingIndicator" class="loading" style="display: none;">
+            加载中，请稍候...
+        </div>
+        
+        <div id="result" class="result" style="display: none;">
+            <div id="modelNamesContainer" style="margin-bottom: 20px;">
+                <h3>模型名称列表（逗号分隔）</h3>
+                <textarea id="modelNames" class="model-names" spellcheck="false"></textarea>
+                <button id="copyNames" class="copy-button">复制模型名称列表</button>
+            </div>
+            
+            <!-- 添加过滤功能 -->
+            <div class="filter-container">
+                <h3>过滤模型</h3>
+                
+                <div class="filter-mode">
+                    <label>
+                        <input type="radio" name="filterMode" value="whitelist" checked> 白名单模式
+                    </label>
+                    <label>
+                        <input type="radio" name="filterMode" value="blacklist"> 黑名单模式
+                    </label>
+                </div>
+                
+                <div class="filter-row">
+                    <input type="text" id="filterKeywords" class="filter-input" placeholder="输入关键词，多个关键词用空格分隔">
+                    <button id="applyFilter" class="filter-button">应用过滤</button>
+                    <button id="resetFilter" class="filter-button">重置过滤</button>
+                </div>
+                
+                <div class="filter-help">
+                    <p>使用说明：</p>
+                    <ul>
+                        <li>白名单模式：只显示包含关键词的模型</li>
+                        <li>黑名单模式：隐藏包含关键词的模型</li>
+                        <li>多个关键词用空格分隔，如：<code>gpt-4 davinci</code></li>
+                        <li>不区分大小写，支持部分匹配</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h3>可用模型</h3>
+            <div id="modelsList"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 主题切换功能
+        function initTheme() {
+            const themeSelect = document.getElementById('theme-select');
+            const savedTheme = localStorage.getItem('theme-preference') || 'system';
+            
+            themeSelect.value = savedTheme;
+            
+            // 初始设置主题
+            applyTheme(savedTheme);
+            
+            // 监听选择变化
+            themeSelect.addEventListener('change', () => {
+                const newTheme = themeSelect.value;
+                localStorage.setItem('theme-preference', newTheme);
+                applyTheme(newTheme);
+            });
+            
+            // 监听系统主题变化
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (themeSelect.value === 'system') {
+                    applyTheme('system');
+                }
+            });
+        }
+
+        function applyTheme(themeSetting) {
+            if (themeSetting === 'system') {
+                // 检测系统主题
+                const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', themeSetting);
+            }
+        }
+
+        // 初始化主题
+        document.addEventListener('DOMContentLoaded', initTheme);
+        
+        document.getElementById('fetchModels').addEventListener('click', async function() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const resultDiv = document.getElementById('result');
+            const modelsList = document.getElementById('modelsList');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            // 验证输入
+            if (!apiUrl || !apiKey) {
+                alert('请输入 API URL 和 API 密钥');
+                return;
+            }
+            
+            // 清空之前的结果
+            modelsList.innerHTML = '';
+            resultDiv.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            
+            try {
+                // 构建完整的 API URL
+                const modelsUrl = `${apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl}/models`;
+                
+                // 发送请求获取模型列表
+                const response = await fetch(modelsUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                loadingIndicator.style.display = 'none';
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(errorData?.error?.message || `请求失败: ${response.status} ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.data && Array.isArray(data.data)) {
+                    // 提取模型名称并用逗号连接
+                    const modelNamesList = data.data.map(model => model.id);
+                    const joinedModelNames = modelNamesList.join(', ');
+                    
+                    // 显示逗号连接的模型名称
+                    document.getElementById('modelNames').value = joinedModelNames;
+                    
+                    // 显示模型列表
+                    data.data.forEach(model => {
+                        const modelItem = document.createElement('div');
+                        modelItem.className = 'model-item';
+                        modelItem.dataset.modelId = model.id; // 添加数据属性用于过滤
+                        modelItem.innerHTML = `
+                            <strong>${model.id}</strong>
+                            ${model.owned_by ? `<div>提供者: ${model.owned_by}</div>` : ''}
+                            ${model.created ? `<div>创建时间: ${new Date(model.created * 1000).toLocaleString()}</div>` : ''}
+                        `;
+                        modelsList.appendChild(modelItem);
+                    });
+                    
+                    resultDiv.style.display = 'block';
+                } else {
+                    throw new Error('未能获取模型列表或返回格式不正确');
+                }
+                
+            } catch (error) {
+                loadingIndicator.style.display = 'none';
+                modelsList.innerHTML = `<div class="error">错误: ${error.message}</div>`;
+                document.getElementById('modelNames').value = '';
+                resultDiv.style.display = 'block';
+            }
+        });
+        
+        // 添加复制功能
+        document.getElementById('copyNames').addEventListener('click', function() {
+            const modelNamesText = document.getElementById('modelNames').value;
+            navigator.clipboard.writeText(modelNamesText)
+                .then(() => {
+                    const copyBtn = this;
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = '已复制！';
+                    setTimeout(() => {
+                        copyBtn.textContent = originalText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请手动复制');
+                });
+        });
+        
+        // 添加过滤功能
+        document.getElementById('applyFilter').addEventListener('click', function() {
+            applyModelFilter();
+        });
+        
+        // 重置过滤器
+        document.getElementById('resetFilter').addEventListener('click', function() {
+            document.getElementById('filterKeywords').value = '';
+            resetFilter();
+        });
+        
+        // 监听回车键触发过滤
+        document.getElementById('filterKeywords').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                applyModelFilter();
+            }
+        });
+        
+        // 监听回车键触发获取模型列表
+        document.getElementById('apiUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('fetchModels').click();
+            }
+        });
+        
+        document.getElementById('apiKey').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('fetchModels').click();
+            }
+        });
+        
+        // 应用过滤
+        function applyModelFilter() {
+            const keywords = document.getElementById('filterKeywords').value.trim().toLowerCase();
+            if (!keywords) {
+                resetFilter();
+                return;
+            }
+            
+            const mode = document.querySelector('input[name="filterMode"]:checked').value;
+            const keywordsList = keywords.split(/\s+/).filter(k => k.length > 0);
+            const modelItems = document.querySelectorAll('.model-item');
+            
+            modelItems.forEach(item => {
+                const modelId = item.dataset.modelId.toLowerCase();
+                const matchesAny = keywordsList.some(keyword => modelId.includes(keyword));
+                
+                if (mode === 'whitelist') {
+                    // 白名单模式：只显示包含关键词的模型
+                    if (matchesAny) {
+                        item.classList.remove('hidden-model');
+                    } else {
+                        item.classList.add('hidden-model');
+                    }
+                } else {
+                    // 黑名单模式：隐藏包含关键词的模型
+                    if (matchesAny) {
+                        item.classList.add('hidden-model');
+                    } else {
+                        item.classList.remove('hidden-model');
+                    }
+                }
+            });
+            
+            // 更新显示在输入框中的模型列表
+            updateFilteredModelsList();
+        }
+        
+        // 重置过滤器，显示所有模型
+        function resetFilter() {
+            const modelItems = document.querySelectorAll('.model-item');
+            modelItems.forEach(item => {
+                item.classList.remove('hidden-model');
+            });
+            
+            // 恢复原始模型列表
+            updateFilteredModelsList();
+        }
+        
+        // 更新过滤后的模型列表到文本框
+        function updateFilteredModelsList() {
+            const visibleModels = Array.from(document.querySelectorAll('.model-item:not(.hidden-model)'))
+                .map(item => item.dataset.modelId);
+            
+            document.getElementById('modelNames').value = visibleModels.join(', ');
+        }
+    </script>
+</body>
+</html>

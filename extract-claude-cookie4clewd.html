@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Cookie 提取工具</title>
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary-color: #f9fafb;
+            --accent-color: #ec4899;
+            --text-color: #374151;
+            --border-color: #e5e7eb;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f3f4f6;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            font-size: 2.2rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        h3 {
+            color: #4b5563;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        
+        button {
+            padding: 12px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            align-self: flex-start;
+            font-weight: 500;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        
+        button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .output {
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            background-color: var(--secondary-color);
+            border-radius: 8px;
+            min-height: 50px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .cookie-item {
+            margin-bottom: 12px;
+            padding: 12px;
+            background-color: white;
+            border-left: 4px solid var(--primary-color);
+            border-radius: 6px;
+            word-break: break-all;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .stats {
+            margin-top: 15px;
+            font-style: italic;
+            color: #6b7280;
+            text-align: center;
+        }
+        
+        .section {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px dashed #d1d5db;
+        }
+        
+        .copy-btn {
+            background-color: var(--accent-color);
+            padding: 8px 16px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .copy-btn:hover {
+            background-color: #db2777;
+        }
+        
+        @media (max-width: 640px) {
+            body {
+                padding: 15px 10px;
+            }
+            
+            .container {
+                padding: 20px;
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+
+        .collapsible-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            padding: 6px 10px;
+            background-color: #e5e7eb;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        
+        .collapsible-header:hover {
+            background-color: #d1d5db;
+        }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .collapsible-content.open {
+            max-height: 1000px; /* 足够大的高度以适应内容 */
+        }
+        
+        .toggle-icon {
+            font-size: 1.2rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .toggle-icon.open {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+    <h1>Claude Cookie 提取工具</h1>
+    <div class="container">
+        <h3>请输入包含Claude Cookie的文本：</h3>
+        <textarea id="inputText" placeholder="粘贴包含Claude Cookie的文本..."></textarea>
+        <button onclick="extractCookies()">提取 Cookie</button>
+        <h3>提取结果：</h3>
+        <div class="output" id="outputContainer">
+            <div class="collapsible-header" id="resultsHeader" onclick="toggleCollapse()">
+                <span>原始提取结果</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="collapsible-content" id="resultsContent">
+                <div id="results"></div>
+            </div>
+            <div id="formattedResults" class="section"></div>
+            <div id="stats" class="stats"></div>
+        </div>
+    </div>
+
+    <script>
+        // 折叠/展开功能
+        function toggleCollapse() {
+            const content = document.getElementById('resultsContent');
+            const icon = document.querySelector('.toggle-icon');
+            content.classList.toggle('open');
+            icon.classList.toggle('open');
+        }
+        
+        function extractCookies() {
+            const inputText = document.getElementById('inputText').value;
+            const resultsContainer = document.getElementById('results');
+            const formattedResultsContainer = document.getElementById('formattedResults');
+            const statsContainer = document.getElementById('stats');
+            const resultsHeader = document.getElementById('resultsHeader');
+            const resultsContent = document.getElementById('resultsContent');
+            const outputContainer = document.getElementById('outputContainer');
+            
+            // 正则表达式匹配sk-ant开头后面跟着102个字符
+            const regex = /sk-ant[\w\-\.~]{102}/g;
+            const matches = inputText.match(regex);
+            
+            resultsContainer.innerHTML = '';
+            formattedResultsContainer.innerHTML = '';
+            statsContainer.textContent = '';
+            
+            if (matches && matches.length > 0) {
+                // 创建统计信息并插入到折叠块前面
+                const statsElement = document.createElement('div');
+                statsElement.innerHTML = `✨ 共找到 <strong>${matches.length}</strong> 个Claude Cookie ✨`;
+                statsElement.className = 'stats-header';
+                statsElement.style.textAlign = 'center';
+                statsElement.style.marginBottom = '10px';
+                statsElement.style.color = '#4f46e5';
+                statsElement.style.padding = '8px';
+                statsElement.style.fontWeight = '500';
+                
+                // 在折叠标题前插入统计信息
+                outputContainer.insertBefore(statsElement, resultsHeader);
+                
+                // 显示原始结果
+                matches.forEach(cookie => {
+                    const cookieElement = document.createElement('div');
+                    cookieElement.className = 'cookie-item';
+                    cookieElement.textContent = cookie;
+                    resultsContainer.appendChild(cookieElement);
+                });
+                
+                // 显示结果头部
+                resultsHeader.style.display = 'flex';
+                
+                // 创建格式化的结果
+                const formattedCookies = matches.map(cookie => `"sessionKey=${cookie}"`).join(',');
+                
+                // 创建标题和显示格式化的结果
+                const formattedTitle = document.createElement('h3');
+                formattedTitle.textContent = 'clewd版（逗号连接）：';
+                formattedResultsContainer.appendChild(formattedTitle);
+                
+                const formattedElement = document.createElement('div');
+                formattedElement.className = 'cookie-item';
+                formattedElement.textContent = formattedCookies;
+                formattedResultsContainer.appendChild(formattedElement);
+                
+                // 添加复制按钮
+                const copyButton = document.createElement('button');
+                copyButton.textContent = '复制clewd版';
+                copyButton.className = 'copy-btn';
+                copyButton.onclick = function() {
+                    navigator.clipboard.writeText(formattedCookies).then(() => {
+                        const originalText = copyButton.textContent;
+                        copyButton.textContent = '已复制！';
+                        copyButton.style.backgroundColor = '#10b981';
+                        setTimeout(() => {
+                            copyButton.textContent = originalText;
+                            copyButton.style.backgroundColor = '';
+                        }, 1500);
+                    });
+                };
+                formattedResultsContainer.appendChild(copyButton);
+                
+                // 创建第二种格式化结果（纯cookie值）
+                const plainCookies = matches.join(',');
+                
+                // 创建标题和显示第二种格式化结果
+                const plainTitle = document.createElement('h3');
+                plainTitle.textContent = 'clewdr版（逗号连接）：';
+                plainTitle.style.marginTop = '20px';
+                formattedResultsContainer.appendChild(plainTitle);
+                
+                const plainElement = document.createElement('div');
+                plainElement.className = 'cookie-item';
+                plainElement.textContent = plainCookies;
+                formattedResultsContainer.appendChild(plainElement);
+                
+                // 添加复制按钮
+                const copyPlainButton = document.createElement('button');
+                copyPlainButton.textContent = '复制clewdr版';
+                copyPlainButton.className = 'copy-btn';
+                copyPlainButton.onclick = function() {
+                    navigator.clipboard.writeText(plainCookies).then(() => {
+                        const originalText = copyPlainButton.textContent;
+                        copyPlainButton.textContent = '已复制！';
+                        copyPlainButton.style.backgroundColor = '#10b981';
+                        setTimeout(() => {
+                            copyPlainButton.textContent = originalText;
+                            copyPlainButton.style.backgroundColor = '';
+                        }, 1500);
+                    });
+                };
+                formattedResultsContainer.appendChild(copyPlainButton);
+            } else {
+                resultsContainer.innerHTML = '<p style="text-align:center;color:#ef4444;">未找到符合格式的Claude Cookie</p>';
+                resultsHeader.style.display = 'none';
+                resultsContent.classList.add('open');  // 当无结果时显示错误信息
+            }
+        }
+    </script>
+</body>
+</html>

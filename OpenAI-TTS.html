@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenAI TTS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .container {
+            padding: 1rem;
+            max-width: 90%;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #007bff;
+            margin-bottom: 1rem;
+        }
+
+        .main-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+        }
+
+        .config-panel {
+            display: none;
+            border: 1px solid #ddd;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .config-panel.visible {
+            display: block;
+        }
+
+        .config-panel h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .config-panel label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .config-panel input,
+        .config-panel select,
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        textarea {
+            height: 200px;
+            resize: vertical;
+            margin-bottom: 1rem;
+        }
+        .text-area-container{
+          background-color: white;
+          border-radius: 8px;
+          padding: 1rem;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          margin-bottom: 1rem;
+        }
+
+        #generateButton {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        #generateButton:hover {
+            background-color: #0056b3;
+        }
+
+        #generateButton:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #message {
+            color: #dc3545;
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        #settingsButton {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background-color: transparent;
+            border: none;
+            color: #007bff;
+            font-size: 2rem;
+            cursor: pointer;
+            z-index: 1000;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        #settingsButton:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+            color: #0056b3;
+        }
+
+        .audio-player-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #343a40;
+            color: white;
+            border-radius: 8px 8px 0 0;
+            padding: 0.75rem;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 100;
+            transition: transform 0.3s ease;
+            transform: translateY(100%);
+        }
+
+        .audio-player-container.visible {
+            display: flex;
+            align-items: center;
+            transform: translateY(0);
+        }
+
+        .play-pause-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+            margin-right: 1rem;
+        }
+
+        .play-pause-button:hover {
+            background-color: #0056b3;
+        }
+
+        .download-button {
+            background-color: transparent;
+            border: none;
+            color: #007bff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            transition: color 0.3s ease;
+            margin-left: auto;
+        }
+
+        .download-button:hover {
+            color: #0056b3;
+        }
+
+        .progress-bar-container {
+            flex-grow: 1;
+            height: 10px;
+            background-color: #555;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: #007bff;
+            border-radius: 5px;
+            width: 0;
+        }
+
+        .info-area {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .info-area.playing .text-info{
+          display: block;
+        }
+
+        .info-area h2,
+        .info-area h3,
+        .info-area p {
+            margin: 0.2rem 0;
+            color: #343a40;
+        }
+        .text-info{
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                max-width: 95%;
+                padding: 0.5rem;
+            }
+            #settingsButton {
+                top: 0.5rem;
+                right: 0.5rem;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>OpenAI TTS</h1>
+
+        <button id="settingsButton" title="Settings">&#x2699;&#xFE0F;</button>
+
+        <div class="main-card">
+            <div class="config-panel">
+                <h2>配置</h2>
+                <label for="baseUrl">API基础URL:</label>
+                <input type="text" id="baseUrl" value="https://api.siliconflow.cn">
+
+                <label for="apiKey">API密钥:</label>
+                <input type="text" id="apiKey" value="sk-123456">
+
+                <label for="model">模型:</label>
+                <input list="modelOptions" id="model" placeholder="请输入模型" value="FunAudioLLM/CosyVoice2-0.5B">
+                <datalist id="modelOptions">
+                    <option value="FunAudioLLM/CosyVoice2-0.5B"></option>
+                    <option value="RVC-Boss/GPT-SoVITS"></option>
+                    <option value="LoRA/RVC-Boss/GPT-SoVITS"></option>
+                </datalist>
+
+                <label for="voice">语音:</label>
+                <input list="voiceOptions" id="voice" placeholder="请输入语音">
+                <datalist id="voiceOptions">
+                    <option value="speech:onyx:cm151jhbw0007srjw2455dz6y:pxpgizwsmaxttynlcqye"></option>
+                </datalist>
+            </div>
+            <div class="text-area-container">
+              <textarea id="textInput" placeholder="在此输入文本..."></textarea>
+              <button id="generateButton">生成语音</button>
+            </div>
+        </div>
+
+        <div class="info-area" id="infoArea">
+            <div class="text-info">
+              <h2>OpenAI TTS</h2>
+              <h3 id="modelName"></h3>
+              <p id="voiceName"></p>
+            </div>
+        </div>
+
+        <div class="audio-player-container" id="audioPlayerContainer">
+            <button class="play-pause-button" id="playPauseButton">&#x25B6;</button>
+            <div class="progress-bar-container" id="progressBarContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <a id="downloadLink" style="display: none;" download="generated_audio.mp3">
+                <button class="download-button" title="Download">&#x2913;</button>
+            </a>
+            <audio id="audioPlayer" style="display: none;"></audio>
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const generateButton = document.getElementById('generateButton');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const messageDiv = document.getElementById('message');
+        let currentAudioUrl = null;
+
+        const baseUrlInput = document.getElementById('baseUrl');
+        const apiKeyInput = document.getElementById('apiKey');
+        const modelSelect = document.getElementById('model');
+        const voiceSelect = document.getElementById('voice');
+
+        const settingsButton = document.getElementById('settingsButton');
+        const configPanel = document.querySelector('.config-panel');
+
+        settingsButton.addEventListener('click', () => {
+            configPanel.classList.toggle('visible');
+        });
+
+        const playPauseButton = document.getElementById('playPauseButton');
+        const progressBarContainer = document.getElementById('progressBarContainer');
+        const progressBar = document.getElementById('progressBar');
+        const downloadLink = document.getElementById('downloadLink');
+        const audioPlayerContainer = document.getElementById('audioPlayerContainer');
+        const infoArea = document.getElementById('infoArea');
+        const modelNameDisplay = document.getElementById('modelName');
+        const voiceNameDisplay = document.getElementById('voiceName');
+
+        let isPlaying = false;
+
+        function togglePlayPause() {
+            if (isPlaying) {
+                audioPlayer.pause();
+                playPauseButton.innerHTML = '&#x25B6;';
+            } else {
+                audioPlayer.play();
+                playPauseButton.innerHTML = '&#x23F8;';
+            }
+            isPlaying = !isPlaying;
+        }
+
+        playPauseButton.addEventListener('click', togglePlayPause);
+
+        audioPlayer.addEventListener('timeupdate', () => {
+            const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+            progressBar.style.width = `${progress}%`;
+        });
+
+        audioPlayer.addEventListener('ended', () => {
+            playPauseButton.innerHTML = '&#x25B6;';
+            isPlaying = false;
+            progressBar.style.width = '0';
+        });
+
+        progressBarContainer.addEventListener('click', (event) => {
+            const containerWidth = progressBarContainer.offsetWidth;
+            const clickPosition = event.offsetX;
+            const seekTime = (clickPosition / containerWidth) * audioPlayer.duration;
+            audioPlayer.currentTime = seekTime;
+        });
+
+        generateButton.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (!text) {
+                messageDiv.textContent = '请输入一些文本。';
+                return;
+            }
+
+            messageDiv.textContent = '';
+            generateButton.disabled = true;
+            generateButton.textContent = '生成中...';
+
+            const baseUrl = baseUrlInput.value;
+            const apiKey = apiKeyInput.value;
+            const voice = voiceSelect.value;
+            const model = modelSelect.value;
+
+            if (!apiKey || !baseUrl) {
+                messageDiv.textContent = 'API密钥或基础URL未配置。';
+                generateButton.disabled = false;
+                generateButton.textContent = '生成语音';
+                return;
+            }
+
+            callTTSApi(text, baseUrl, apiKey, voice, model, (error, audioUrl) => {
+                generateButton.disabled = false;
+                generateButton.textContent = '生成语音';
+                if (error) {
+                    messageDiv.textContent = error;
+                } else {
+                    if (currentAudioUrl) {
+                        URL.revokeObjectURL(currentAudioUrl);
+                    }
+                    audioPlayer.src = audioUrl;
+                    currentAudioUrl = audioUrl;
+                    isPlaying = false;
+                    playPauseButton.innerHTML = '&#x25B6;';
+                    downloadLink.href = audioUrl;
+                    downloadLink.style.display = 'inline-block';
+                    modelNameDisplay.textContent = model;
+                    voiceNameDisplay.textContent = voice;
+
+                    infoArea.classList.add('playing');
+                    audioPlayerContainer.classList.add('visible');
+                }
+            });
+        });
+
+        function callTTSApi(text, baseUrl, apiKey, voice, model, callback) {
+            const url = `${baseUrl}/v1/audio/speech`;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: model,
+                    input: text,
+                    voice: voice
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`HTTP 错误！状态: ${response.status}, 响应: ${text}`);
+                    });
+                }
+                return response.arrayBuffer();
+            })
+            .then(buffer => {
+                const audioBlob = new Blob([buffer], { type: 'audio/mpeg' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                callback(null, audioUrl);
+            })
+            .catch(error => {
+                console.error('Fetch 错误:', error);
+                callback(`TTS API请求失败：${error.message}`);
+            });
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (currentAudioUrl) {
+                URL.revokeObjectURL(currentAudioUrl);
+            }
+        });
+    </script>
+</body>
+</html>

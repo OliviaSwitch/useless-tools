@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF目录提取工具</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- <link rel="icon" href="img/icon.svg" type="image/svg+xml"> -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  
+  <!-- 内联样式 -->
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --primary-hover: #3a56d4;
+      --secondary-color: #48cae4;
+      --secondary-hover: #30a9c3;
+      --accent-color: #4895ef;
+      --accent-hover: #3a7fd0;
+      --text-color: #2b2d42;
+      --text-light: #6c757d;
+      --background: #f8f9fa;
+      --card-bg: #ffffff;
+      --border-color: #e9ecef;
+      --border-radius: 8px;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--background);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background-color: var(--card-bg);
+      padding: 40px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      transition: var(--transition);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: var(--text-color);
+      font-weight: 700;
+      font-size: 2.5rem;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: var(--text-color);
+      font-weight: 600;
+    }
+
+    .upload-area {
+      margin-bottom: 40px;
+      text-align: center;
+      padding: 30px;
+      border: 2px dashed var(--border-color);
+      border-radius: var(--border-radius);
+      background-color: #f8f9fa;
+      transition: var(--transition);
+    }
+
+    .upload-area:hover {
+      border-color: var(--primary-color);
+      background-color: #f1f3f9;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .upload-button {
+      display: inline-block;
+      padding: 14px 28px;
+      background-color: var(--primary-color);
+      color: white;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: var(--transition);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(67, 97, 238, 0.3);
+    }
+
+    .upload-button:hover {
+      background-color: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.4);
+    }
+
+    .file-name {
+      margin-top: 15px;
+      font-size: 15px;
+      color: var(--text-light);
+    }
+
+    .result-container {
+      margin-top: 30px;
+      padding: 25px;
+      border-radius: var(--border-radius);
+      background-color: #f8f9fa;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .toc-result {
+      margin-bottom: 25px;
+      white-space: pre-wrap;
+      font-family: 'Monaco', 'Consolas', monospace;
+      max-height: 450px;
+      overflow-y: auto;
+      padding: 15px;
+      background-color: var(--card-bg);
+      border: 1px solid #eee;
+      border-radius: var(--border-radius);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .toc-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      color: var(--text-light);
+      text-align: center;
+    }
+
+    .toc-empty-state svg {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 15px;
+      fill: #d1d5db;
+    }
+
+    .toc-empty-state p {
+      font-size: 16px;
+      max-width: 300px;
+      line-height: 1.5;
+    }
+
+    .export-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: var(--transition);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(72, 149, 239, 0.3);
+    }
+
+    .btn:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(72, 149, 239, 0.4);
+    }
+
+    .loading-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top: 4px solid var(--primary-color);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .format-selector {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 25px;
+      justify-content: center;
+      padding: 15px;
+      background-color: var(--card-bg);
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .format-selector label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 10px 16px;
+      border-radius: 20px;
+      transition: var(--transition);
+    }
+
+    .format-selector label:hover {
+      background-color: #f1f3f9;
+    }
+
+    .format-selector input[type="radio"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #ddd;
+      border-radius: 50%;
+      outline: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .format-selector input[type="radio"]:checked {
+      border-color: var(--primary-color);
+    }
+
+    .format-selector input[type="radio"]::after {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .format-selector input[type="radio"]:checked::after {
+      opacity: 1;
+    }
+
+    /* 添加响应式设计 */
+    @media (max-width: 768px) {
+      .container {
+        padding: 25px;
+        margin: 20px auto;
+      }
+      
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 30px;
+      }
+      
+      .upload-area {
+        padding: 20px;
+      }
+      
+      .export-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .btn {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      padding: 15px 0;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .github-link {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background-color: rgba(67, 97, 238, 0.08);
+      color: var(--primary-color);
+      transition: all 0.3s ease;
+    }
+
+    .github-link:hover {
+      background-color: rgba(67, 97, 238, 0.15);
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(67, 97, 238, 0.2);
+    }
+
+    .github-icon {
+      fill: var(--primary-color);
+      transition: transform 0.3s ease;
+    }
+
+    .github-link:hover .github-icon {
+      transform: scale(1.1);
+    }
+
+    .btn, .upload-button {
+      position: relative;
+      overflow: hidden;
+    }
+    .ripple {
+      position: absolute;
+      background-color: rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      transform: scale(0);
+      animation: ripple 0.6s linear;
+      pointer-events: none;
+    }
+    @keyframes ripple {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    .highlight {
+      border-color: var(--primary-color);
+      background-color: #f1f3f9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>PDF目录提取工具</h1>
+    <div class="upload-area" id="dropArea">
+      <input type="file" id="fileInput" accept=".pdf" />
+      <label for="fileInput" class="upload-button">选择或拖放PDF文件</label>
+      <p id="fileName" class="file-name"></p>
+    </div>
+    
+    <div class="result-container">
+      <h2>提取的目录</h2>
+      <div class="format-selector">
+        <label><input type="radio" name="format" value="plain" checked> <span>纯文本</span></label>
+        <label><input type="radio" name="format" value="markdown"> <span>Markdown</span></label>
+      </div>
+      <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>正在处理中...</p>
+      </div>
+      <div id="tocResult" class="toc-result">
+        <div class="toc-empty-state" id="emptyState">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+          </svg>
+          <p>请上传PDF文件以提取目录内容</p>
+        </div>
+      </div>
+      <div class="export-buttons" style="display: none;" id="exportButtons">
+        <button id="copyBtn" class="btn">复制到剪贴板</button>
+        <button id="downloadBtn" class="btn">下载为文本文件</button>
+        <button id="downloadMarkdownBtn" class="btn">下载为Markdown</button>
+      </div>
+    </div>
+  </div>
+  
+  <footer class="footer">
+    <a href="https://github.com/OliviaSwitch/extract_toc_from_pdf" target="_blank" class="github-link" title="在GitHub上查看源代码">
+      <svg class="github-icon" viewBox="0 0 16 16" width="24" height="24">
+        <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+      </svg>
+    </a>
+  </footer>
+
+  <!-- 内联JavaScript -->
+  <script>
+    // 设置PDF.js工作路径
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+
+    // 等待DOM加载完成
+    document.addEventListener('DOMContentLoaded', function() {
+      // 获取DOM元素
+      const fileInput = document.getElementById('fileInput');
+      const fileName = document.getElementById('fileName');
+      const tocResult = document.getElementById('tocResult');
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      const exportButtons = document.getElementById('exportButtons');
+      const copyBtn = document.getElementById('copyBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const downloadMarkdownBtn = document.getElementById('downloadMarkdownBtn');
+      const formatRadios = document.querySelectorAll('input[name="format"]');
+      const dropArea = document.getElementById('dropArea');
+      const emptyState = document.getElementById('emptyState');
+
+      // 存储提取的目录数据
+      let extractedOutline = null;
+      // 存储当前选择的PDF文件名（不带扩展名）
+      let currentPdfName = '';
+
+      // 设置拖放功能
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+      });
+
+      function highlight() {
+        dropArea.classList.add('highlight');
+      }
+
+      function unhighlight() {
+        dropArea.classList.remove('highlight');
+      }
+
+      // 处理拖放文件
+      dropArea.addEventListener('drop', handleDrop, false);
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0 && files[0].type === 'application/pdf') {
+          fileInput.files = files;
+          handleFileSelectEvent({target: fileInput});
+        }
+      }
+
+      // 监听文件选择事件
+      fileInput.addEventListener('change', handleFileSelectEvent);
+
+      // 监听格式选择变化
+      formatRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+          if (extractedOutline) {
+            displayOutline(extractedOutline);
+          }
+        });
+      });
+
+      // 处理文件选择事件
+      async function handleFileSelectEvent(event) {
+        const file = event.target.files[0];
+        if (!file || file.type !== 'application/pdf') {
+          alert('请选择有效的PDF文件');
+          return;
+        }
+
+        // 获取文件名（不含扩展名）
+        currentPdfName = file.name.replace(/\.pdf$/i, '');
+        fileName.textContent = file.name;
+        tocResult.innerHTML = '';
+        tocResult.style.display = 'none';
+        exportButtons.style.display = 'none';
+        loadingIndicator.style.display = 'flex';
+
+        try {
+          // 读取文件
+          const arrayBuffer = await readFileAsArrayBuffer(file);
+          
+          // 加载PDF文档
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          
+          // 提取目录
+          extractedOutline = await extractOutline(pdf);
+          
+          // 显示目录
+          displayOutline(extractedOutline);
+          
+          tocResult.style.display = 'block';
+          exportButtons.style.display = 'flex';
+        } catch (error) {
+          console.error('处理PDF文件时出错:', error);
+          tocResult.innerHTML = `<p class="error">处理PDF文件时出错: ${error.message}</p>`;
+          tocResult.style.display = 'block';
+        } finally {
+          loadingIndicator.style.display = 'none';
+        }
+      }
+
+      // 将文件读取为ArrayBuffer
+      function readFileAsArrayBuffer(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
+      // 提取PDF目录
+      async function extractOutline(pdf) {
+        const outline = await pdf.getOutline();
+        if (!outline || outline.length === 0) {
+          showEmptyState('未能从PDF中提取到目录，可能该PDF未包含目录结构');
+          throw new Error('未在PDF中找到目录。');
+        }
+        return outline;
+      }
+
+      // 获取当前选择的格式
+      function getSelectedFormat() {
+        return document.querySelector('input[name="format"]:checked').value;
+      }
+
+      // 显示目录内容
+      function displayOutline(outline) {
+        if (!outline || outline.length === 0) {
+          tocResult.textContent = '未找到目录。';
+          return;
+        }
+        
+        const format = getSelectedFormat();
+        
+        if (format === 'markdown') {
+          tocResult.textContent = generateMarkdownTOC(outline);
+        } else {
+          tocResult.textContent = generatePlainTextTOC(outline);
+        }
+      }
+
+      // 生成纯文本格式的目录
+      function generatePlainTextTOC(outline) {
+        let tocText = '';
+        
+        function processItems(items, indent = 0) {
+          for (const item of items) {
+            // 创建缩进
+            const indentation = '  '.repeat(indent);
+            
+            // 添加目录项
+            tocText += `${indentation}${item.title}\n`;
+            
+            // 如果有子项，递归处理
+            if (item.items && item.items.length > 0) {
+              processItems(item.items, indent + 1);
+            }
+          }
+        }
+        
+        processItems(outline);
+        return tocText;
+      }
+
+      // 生成Markdown格式的目录
+      function generateMarkdownTOC(outline) {
+        let tocText = '';
+        
+        function processItems(items, indent = 0) {
+          for (const item of items) {
+            // 计算Markdown标题级别（最大为6级）
+            const headingLevel = Math.min(indent + 1, 6);
+            const heading = '#'.repeat(headingLevel);
+            
+            // 添加目录项
+            tocText += `${heading} ${item.title}\n\n`;
+            
+            // 如果有子项，递归处理
+            if (item.items && item.items.length > 0) {
+              processItems(item.items, indent + 1);
+            }
+          }
+        }
+        
+        processItems(outline);
+        return tocText;
+      }
+
+      // 复制到剪贴板
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(tocResult.textContent)
+          .then(() => {
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '已复制!';
+            setTimeout(() => {
+              copyBtn.textContent = originalText;
+            }, 2000);
+          })
+          .catch(err => {
+            console.error('无法复制到剪贴板:', err);
+          });
+      });
+
+      // 下载为文本文件
+      downloadBtn.addEventListener('click', () => {
+        const text = tocResult.textContent;
+        // 使用PDF文件名作为下载文件名
+        const downloadName = currentPdfName ? `${currentPdfName}_目录.txt` : 'pdf目录.txt';
+        downloadFile(text, downloadName, 'text/plain');
+      });
+
+      // 下载为Markdown文件
+      downloadMarkdownBtn.addEventListener('click', () => {
+        let text;
+        const currentFormat = getSelectedFormat();
+        
+        // 如果当前不是Markdown格式，则转换为Markdown
+        if (currentFormat !== 'markdown' && extractedOutline) {
+          text = generateMarkdownTOC(extractedOutline);
+        } else {
+          text = tocResult.textContent;
+        }
+        
+        // 使用PDF文件名作为下载文件名
+        const downloadName = currentPdfName ? `${currentPdfName}_目录.md` : 'pdf目录.md';
+        downloadFile(text, downloadName, 'text/markdown');
+      });
+
+      // 下载文件通用函数
+      function downloadFile(content, fileName, contentType) {
+        const blob = new Blob([content], { type: contentType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
+      // 为按钮添加涟漪效果
+      const buttons = document.querySelectorAll('.btn, .upload-button');
+      buttons.forEach(button => {
+        button.addEventListener('mousedown', createRipple);
+      });
+
+      function createRipple(event) {
+        const button = event.currentTarget;
+        
+        // 创建涟漪元素
+        const ripple = document.createElement('span');
+        const rect = button.getBoundingClientRect();
+        
+        const size = Math.max(rect.width, rect.height);
+        const x = event.clientX - rect.left - size / 2;
+        const y = event.clientY - rect.top - size / 2;
+        
+        // 设置涟漪样式
+        ripple.style.width = ripple.style.height = `${size}px`;
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+        ripple.classList.add('ripple');
+        
+        // 添加涟漪效果
+        button.appendChild(ripple);
+        
+        // 移除涟漪效果
+        setTimeout(() => {
+          ripple.remove();
+        }, 600);
+      }
+
+      // 显示空状态提示
+      function showEmptyState(message) {
+        if (!emptyState) {
+          emptyState = document.createElement('div');
+          emptyState.className = 'toc-empty-state';
+          emptyState.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+              <path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+            </svg>
+            <p>${message}</p>
+          `;
+          tocResult.innerHTML = '';
+          tocResult.appendChild(emptyState);
+        } else {
+          emptyState.querySelector('p').textContent = message;
+          emptyState.style.display = 'flex';
+        }
+      }
+
+      // 初始化时显示空状态
+      showEmptyState('请上传PDF文件以提取目录内容');
+    });
+  </script>
+</body>
+</html>

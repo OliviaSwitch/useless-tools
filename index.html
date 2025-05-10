@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>没什么用的小工具</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* 明亮模式下的颜色 */
+            --background-color: #f7f8fa;
+            --surface-color: #ffffff;
+            --on-surface-color: #1c1b1f;
+            --on-surface-variant-color: #1d192b;
+            --primary-color: #6750a4;
+            --on-primary-color: #ffffff;
+            --secondary-color: #625b71;
+            --on-secondary-color: #ffffff;
+            --outline-color: #79747e;
+            --outline-variant-color: #e6e0e9;
+            --surface-variant-color: #f7f2fa;
+            --primary-container-color: #eaddff;
+            --error-color: #b3261e;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --card-shadow: 0 4px 12px var(--shadow-color);
+            --card-hover-shadow: 0 8px 24px var(--shadow-color);
+        }
+
+        [data-theme="dark"] {
+            /* 暗黑模式下的颜色 */
+            --background-color: #1c1b1f;
+            --surface-color: #2b2930;
+            --on-surface-color: #e6e1e5;
+            --on-surface-variant-color: #cac4d0;
+            --primary-color: #d0bcff;
+            --on-primary-color: #381e72;
+            --secondary-color: #ccc2dc;
+            --on-secondary-color: #332d41;
+            --outline-color: #948f99;
+            --outline-variant-color: #49454f;
+            --surface-variant-color: #49454f;
+            --primary-container-color: #4f378b;
+            --error-color: #f2b8b5;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --card-shadow: 0 4px 12px var(--shadow-color);
+            --card-hover-shadow: 0 8px 24px var(--shadow-color);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--on-surface-color);
+            line-height: 1.6;
+            transition: background-color 0.3s, color 0.3s;
+            padding-bottom: 40px;
+        }
+
+        header {
+            background-color: var(--surface-color);
+            padding: 24px 20px;
+            box-shadow: 0 1px 3px var(--shadow-color);
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--on-surface-color);
+            transition: color 0.3s;
+        }
+
+        .theme-switcher {
+            display: flex;
+            align-items: center;
+        }
+
+        .theme-switcher label {
+            margin-right: 12px;
+            color: var(--on-surface-variant-color);
+            font-size: 14px;
+        }
+
+        .theme-switcher select {
+            padding: 8px 32px 8px 12px;
+            border-radius: 100px;
+            border: 1px solid var(--outline-color);
+            background-color: var(--surface-color);
+            color: var(--on-surface-color);
+            font-size: 14px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236750a4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        [data-theme="dark"] .theme-switcher select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d0bcff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .tools-intro {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .tools-intro h2 {
+            font-size: 24px;
+            margin-bottom: 12px;
+            color: var(--on-surface-variant-color);
+        }
+
+        .tools-intro p {
+            color: var(--on-surface-variant-color);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tools-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .tool-card {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--card-hover-shadow);
+        }
+
+        .tool-header {
+            padding: 20px;
+            background-color: var(--primary-container-color);
+            color: var(--on-surface-variant-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .tool-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .tool-header .tool-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            background-color: var(--surface-color);
+            color: var(--primary-color);
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+
+        .tool-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tool-description {
+            margin-bottom: 20px;
+            color: var(--on-surface-variant-color);
+            flex-grow: 1;
+        }
+
+        .tool-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: var(--primary-color);
+            color: var(--on-primary-color);
+            text-decoration: none;
+            border-radius: 100px;
+            font-weight: 500;
+            text-align: center;
+            transition: background-color 0.2s;
+            align-self: flex-start;
+        }
+
+        .tool-link:hover {
+            background-color: var(--secondary-color);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            color: var(--on-surface-variant-color);
+            font-size: 14px;
+        }
+
+        .footer-links {
+            margin-top: 10px;
+        }
+
+        .footer-links a {
+            color: var(--primary-color);
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--secondary-color);
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .tools-container {
+                grid-template-columns: 1fr;
+            }
+
+            main {
+                margin: 30px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>没什么用的小工具</h1>
+            <div class="theme-switcher">
+                <label for="theme-select">主题模式：</label>
+                <select id="theme-select">
+                    <option value="system">跟随系统</option>
+                    <option value="light">明亮模式</option>
+                    <option value="dark">暗黑模式</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="tools-container" id="tools-container">
+            <!-- 工具卡片将通过 JavaScript 动态生成 -->
+        </div>
+    </main>
+
+    <footer>
+        <p>© <span id="current-year"></span> 实用工具集. 保留所有权利.</p>
+        <div class="footer-links">
+            <a href="https://github.com/username/useless-tools" target="_blank">GitHub 仓库</a>
+        </div>
+    </footer>
+
+    <script>
+        // 工具数据
+        const tools = [
+            {
+                id: 'openai-model-fetcher',
+                name: 'OpenAI 模型获取器',
+                description: '查询并获取OpenAI兼容格式的API可用的所有模型列表，支持过滤。',
+                tags: ['API', 'OpenAI'],
+                path: 'openai-model-fetcher.html'
+            },
+            {
+                id: 'openai-tts',
+                name: 'OpenAI TTS 工具',
+                description: '使用 OpenAI 或兼容接口的 TTS 技术将文本转换为逼真的语音。',
+                tags: ['API', 'TTS', '语音合成'],
+                path: 'OpenAI-TTS.html'
+            },
+            {
+                id: 'extract-toc',
+                name: 'PDF 目录提取工具',
+                description: '从 PDF 文件中提取目录结构，并支持导出为纯文本或 Markdown 格式。',
+                tags: ['PDF', '提取'],
+                path: 'extract-toc-from-pdf.html'
+            },
+            {
+                id: 'claude-cookie',
+                name: 'Claude Cookie 提取工具',
+                description: '从文本中提取 Claude 的 Cookie 信息，适用于 clewd/clewdr 等项目。',
+                tags: ['API', 'Claude', 'Cookie'],
+                path: 'extract-claude-cookie4clewd.html'
+            }
+        ];
+
+        // 初始化主题
+        function initTheme() {
+            const themeSelect = document.getElementById('theme-select');
+            const savedTheme = localStorage.getItem('theme-preference') || 'system';
+            
+            themeSelect.value = savedTheme;
+            
+            // 初始设置主题
+            applyTheme(savedTheme);
+            
+            // 监听选择变化
+            themeSelect.addEventListener('change', () => {
+                const newTheme = themeSelect.value;
+                localStorage.setItem('theme-preference', newTheme);
+                applyTheme(newTheme);
+            });
+            
+            // 监听系统主题变化
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (themeSelect.value === 'system') {
+                    applyTheme('system');
+                }
+            });
+        }
+
+        function applyTheme(themeSetting) {
+            if (themeSetting === 'system') {
+                // 检测系统主题
+                const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', themeSetting);
+            }
+        }
+
+        // 渲染工具卡片
+        function renderTools() {
+            const container = document.getElementById('tools-container');
+            
+            tools.forEach(tool => {
+                const card = document.createElement('div');
+                card.className = 'tool-card';
+                
+                const tagsHTML = tool.tags.map(tag => `<span class="tool-tag">${tag}</span>`).join('');
+                
+                card.innerHTML = `
+                    <div class="tool-header">
+                        <h3>${tool.name}</h3>
+                        <div class="tool-tags">
+                            ${tagsHTML}
+                        </div>
+                    </div>
+                    <div class="tool-content">
+                        <div class="tool-description">
+                            ${tool.description}
+                        </div>
+                        <a href="${tool.path}" class="tool-link">打开工具</a>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // 页面加载后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            renderTools();
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+        });
+    </script>
+</body>
+</html>
